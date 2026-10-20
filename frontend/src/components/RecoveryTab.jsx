@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import PlotlyChart from './PlotlyChart';
 import { GitCompare, AlertTriangle, CheckCircle, Info, TrendingUp, HelpCircle } from 'lucide-react';
 
+import { getMockRecovery } from '../mockData';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
 export default function RecoveryTab({ selectedZone }) {
   const [treatedZone, setTreatedZone] = useState(selectedZone || 'B');
   const [controlZone, setControlZone] = useState('A');
@@ -13,12 +17,14 @@ export default function RecoveryTab({ selectedZone }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/zones/${tZone}/recovery?control=${cZone}`);
+      const res = await fetch(`${API_BASE}/zones/${tZone}/recovery?control=${cZone}`);
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
       setRecoveryData(data);
     } catch (err) {
-      setError(err.message);
+      console.warn("Backend unavailable; using client mock recovery:", err.message);
+      // Fallback for Vercel / GitHub Pages deployment
+      setRecoveryData(getMockRecovery(tZone, cZone));
     } finally {
       setLoading(false);
     }

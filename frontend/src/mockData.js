@@ -191,3 +191,123 @@ export function generateMockSeries(zoneId) {
 
   return points;
 }
+
+export function getMockTreatments(zone = 'B', acres = 10) {
+  const isStressed = zone === 'B';
+  return {
+    zone: zone,
+    current_health: isStressed ? 0.468 : 0.85,
+    treatments: [
+      {
+        id: "pali_straw_drip",
+        name: "Pali Method Straw Mulching + Precision Drip Irrigation",
+        cost_per_acre: 130.0,
+        cost_inr_per_acre: 10500,
+        acres: acres,
+        total_cost: Math.round(acres * 130),
+        total_cost_inr: Math.round(acres * 10500),
+        crop_compat: "Universal (Tea, Horticultural Crops, Turmeric, Ginger)",
+        soil_ok: "Acidic soils & Cracking Vertisols; prevents root shear",
+        evidence_level: "Moderate-High (ICAR-CRIDA & Assam Agricultural University trials)",
+        description: "Heavy crop residue mulching dampens soil surface temperature by 6-9°C during summer heatwaves.",
+        drought_benefit: 0.36,
+        diversity_benefit: 0.16,
+        expected_risk_reduction: 0.325,
+        worst_case_5th_pct: 0.245,
+        best_case_95th_pct: 0.395,
+        pareto_optimal: true
+      },
+      {
+        id: "jeevamrutha_bio_npk",
+        name: "Bio-NPK Consortium & Jeevamrutha Microbial Inoculation",
+        cost_per_acre: 80.0,
+        cost_inr_per_acre: 6500,
+        acres: acres,
+        total_cost: Math.round(acres * 80),
+        total_cost_inr: Math.round(acres * 6500),
+        crop_compat: "Tea estates, Black Rice, Assam Lemon, Spices",
+        soil_ok: "Effective in North East organic soils with organic carbon > 0.5%",
+        evidence_level: "Moderate (ICAR-NBAIM Mau & AAU Jorhat genomic assays)",
+        description: "Fermented indigenous beneficial consortium (Azotobacter, PSB, KMB, Trichoderma viride, VAM).",
+        drought_benefit: 0.24,
+        diversity_benefit: 0.40,
+        expected_risk_reduction: 0.290,
+        worst_case_5th_pct: 0.210,
+        best_case_95th_pct: 0.370,
+        pareto_optimal: true
+      },
+      {
+        id: "dhaincha_sunnhemp",
+        name: "Dhaincha & Sunnhemp Green Manuring (Sesbania + Crotalaria)",
+        cost_per_acre: 55.0,
+        cost_inr_per_acre: 4500,
+        acres: acres,
+        total_cost: Math.round(acres * 55),
+        total_cost_inr: Math.round(acres * 4500),
+        crop_compat: "High (Black Rice, Paddy rotations, Tea replantation)",
+        soil_ok: "Brahmaputra Alluvial Loam & Acidic soils (pH 5.0 - 7.5)",
+        evidence_level: "High (ICAR-CRIDA multi-decade trials)",
+        description: "Adds 15-20 t/ha biomass, restores active soil organic carbon (SOC), and fixes 60-80 kg N/ha.",
+        drought_benefit: 0.20,
+        diversity_benefit: 0.26,
+        expected_risk_reduction: 0.220,
+        worst_case_5th_pct: 0.165,
+        best_case_95th_pct: 0.285,
+        pareto_optimal: false
+      }
+    ],
+    assumptions: {
+      simulation_method: "Monte Carlo North East India Agro-Ecological stress simulation",
+      scenarios_evaluated: 500,
+      temperature_delta_c: "Uniform(0.0, 4.0 °C)",
+      rainfall_multiplier: "Uniform(0.5, 1.0)",
+      worst_case_metric: "5th percentile risk reduction (severe drought test)",
+      pareto_criteria: "Non-dominated across (Cost, Expected Benefit, 5th Percentile Worst-Case)",
+      agronomic_advisory: "Check local KVK (Krishi Vigyan Kendra) & Assam Agricultural University (AAU) guidance."
+    },
+    disclaimer: "Simulated data. Screening result, not a laboratory diagnosis."
+  };
+}
+
+export function getMockRecovery(treatedZone = 'B', controlZone = 'A') {
+  const treatmentDay = 120;
+  const series = [];
+  for (let t = 0; t < 180; t++) {
+    const t_ratio = t / 180.0;
+    const isTreatedStressed = treatedZone === 'B';
+    const treatedBase = isTreatedStressed ? Math.max(0.40, 0.85 - 0.45 * Math.pow(t_ratio, 1.4)) : 0.88;
+    const controlVal = 0.86 + Math.sin(t / 8) * 0.02;
+    const treatedActual = t < treatmentDay ? treatedBase : treatedBase + 0.12 * Math.pow((t - treatmentDay) / 60.0, 0.8);
+    const counterfactual = t < treatmentDay ? treatedActual : treatedBase;
+
+    series.push({
+      day: t,
+      treated_actual: parseFloat(treatedActual.toFixed(3)),
+      control_actual: parseFloat(controlVal.toFixed(3)),
+      counterfactual: parseFloat(counterfactual.toFixed(3)),
+      is_post_treatment: t >= treatmentDay
+    });
+  }
+
+  return {
+    status: "success",
+    treated_zone: treatedZone,
+    control_zone: controlZone,
+    treatment_day: treatmentDay,
+    did_estimate: 0.142,
+    ci_95: [0.088, 0.196],
+    p_value_approx: 0.002,
+    means: {
+      treated_pre: 0.645,
+      treated_post: 0.765,
+      control_pre: 0.862,
+      control_post: 0.864,
+      treated_delta: 0.120,
+      control_delta: 0.002
+    },
+    series: series,
+    caveat: "Change does not prove causation. Assumes parallel pre-treatment trends hold.",
+    disclaimer: "Simulated data. Screening result, not a laboratory diagnosis."
+  };
+}
+

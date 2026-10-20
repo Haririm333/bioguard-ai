@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import PlotlyChart from './PlotlyChart';
 import { DollarSign, Award, CheckCircle2, AlertCircle, Info, Sparkles, TrendingUp, Sliders } from 'lucide-react';
 
+import { getMockTreatments } from '../mockData';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
 export default function TreatmentTab({ selectedZone, zones, onSelectZone }) {
   const [acres, setAcres] = useState(10);
   const [treatmentData, setTreatmentData] = useState(null);
@@ -12,12 +16,14 @@ export default function TreatmentTab({ selectedZone, zones, onSelectZone }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/zones/${zone}/treatments?acres=${acresVal}`);
+      const res = await fetch(`${API_BASE}/zones/${zone}/treatments?acres=${acresVal}`);
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
       setTreatmentData(data);
     } catch (err) {
-      setError(err.message);
+      console.warn("Backend unavailable; using client mock treatments:", err.message);
+      // Fallback for Vercel / GitHub Pages deployment
+      setTreatmentData(getMockTreatments(zone, acresVal));
     } finally {
       setLoading(false);
     }
