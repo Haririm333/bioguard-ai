@@ -95,27 +95,24 @@ export default function App() {
       await fetchZones();
       await fetchSeries(zoneId);
     } catch (err) {
-      if (isDemoMode) {
-        setLastSampleResult({
-          zone: zoneId,
-          sample_day: 179,
-          variance_reduction_pct: 42.5,
-          pre_sample: { band_width_90: 0.154 },
-          post_sample: { band_width_90: 0.088 }
-        });
-        setSelectedSeries(prev => {
-          if (!prev) return prev;
-          return prev.map(pt => pt.day === 179 ? {
-            ...pt,
-            has_dna_sample: true,
-            health_variance: pt.health_variance * 0.55,
-            health_lo: pt.health_mean - 0.04,
-            health_hi: pt.health_mean + 0.04
-          } : pt);
-        });
-      } else {
-        alert(`Sampling error: ${err.message}`);
-      }
+      console.warn("Backend unavailable; using client sampling simulation:", err.message);
+      setLastSampleResult({
+        zone: zoneId,
+        sample_day: 179,
+        variance_reduction_pct: 42.5,
+        pre_sample: { band_width_90: 0.154 },
+        post_sample: { band_width_90: 0.088 }
+      });
+      setSelectedSeries(prev => {
+        if (!prev) return prev;
+        return prev.map(pt => pt.day === 179 ? {
+          ...pt,
+          has_dna_sample: true,
+          health_variance: pt.health_variance * 0.55,
+          health_lo: pt.health_mean - 0.04,
+          health_hi: pt.health_mean + 0.04
+        } : pt);
+      });
     } finally {
       setSamplingLoading(false);
     }
@@ -134,26 +131,23 @@ export default function App() {
       const data = await res.json();
       setClimateSimResult(data);
     } catch (err) {
-      if (isDemoMode) {
-        const stress = (simParams.temp_delta / 4.0) * 0.15 + (1.0 - simParams.rain_mult) * 0.18;
-        const simZones = zones.map(z => {
-          const simHealth = Math.max(0.1, z.health_mean - stress * (z.zone === 'B' ? 1.0 : 0.4));
-          return {
-            zone: z.zone,
-            baseline_health: z.health_mean,
-            simulated_health: parseFloat(simHealth.toFixed(3)),
-            health_delta: parseFloat((simHealth - z.health_mean).toFixed(3)),
-            simulated_variance: z.health_variance,
-            simulated_lo: parseFloat((simHealth - 0.06).toFixed(3)),
-            simulated_hi: parseFloat((simHealth + 0.06).toFixed(3)),
-            priority: simHealth < 0.65 ? 'High' : simHealth < 0.80 ? 'Moderate' : 'Low',
-            priority_color: simHealth < 0.65 ? '#ef4444' : simHealth < 0.80 ? '#f59e0b' : '#10b981'
-          };
-        });
-        setClimateSimResult({ zones: simZones, label: "Model estimate under stated assumptions" });
-      } else {
-        console.error("Simulation error:", err);
-      }
+      console.warn("Backend unavailable; using client climate simulation:", err.message);
+      const stress = (simParams.temp_delta / 4.0) * 0.15 + (1.0 - simParams.rain_mult) * 0.18;
+      const simZones = zones.map(z => {
+        const simHealth = Math.max(0.1, z.health_mean - stress * (z.zone === 'B' ? 1.0 : 0.4));
+        return {
+          zone: z.zone,
+          baseline_health: z.health_mean,
+          simulated_health: parseFloat(simHealth.toFixed(3)),
+          health_delta: parseFloat((simHealth - z.health_mean).toFixed(3)),
+          simulated_variance: z.health_variance,
+          simulated_lo: parseFloat((simHealth - 0.06).toFixed(3)),
+          simulated_hi: parseFloat((simHealth + 0.06).toFixed(3)),
+          priority: simHealth < 0.65 ? 'High' : simHealth < 0.80 ? 'Moderate' : 'Low',
+          priority_color: simHealth < 0.65 ? '#ef4444' : simHealth < 0.80 ? '#f59e0b' : '#10b981'
+        };
+      });
+      setClimateSimResult({ zones: simZones, label: "Model estimate under stated assumptions" });
     } finally {
       setSimLoading(false);
     }
@@ -170,13 +164,13 @@ export default function App() {
     setResetting(true);
     try {
       await fetch(`${API_BASE}/reset`, { method: 'POST' });
+    } catch (err) {
+      console.warn("Backend reset endpoint unavailable:", err.message);
+    } finally {
       setLastSampleResult(null);
       setClimateSimResult(null);
       await fetchZones();
       await fetchSeries(selectedZone);
-    } catch (err) {
-      console.error("Reset error:", err);
-    } finally {
       setResetting(false);
     }
   };

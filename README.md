@@ -1,5 +1,6 @@
 # BIOGUARD AI 🌿🔬
 
+> 🌐 **Live Vercel Application:** [https://bioguard-2iiwtve1k-haririm333.vercel.app/](https://bioguard-2iiwtve1k-haririm333.vercel.app/)  
 > **Uncertainty-First Soil Microbiome Intelligence & Climate Resilience Engine**  
 > *A hackathon prototype for precision regenerative agriculture. Software only, local execution, all data is SIMULATED.*
 
